@@ -1,2 +1,2 @@
 # LoveTracker
-Flutter gps tracker app for my girlfriend.
+Api for my flutter gps tracker app for my girlfriend.
