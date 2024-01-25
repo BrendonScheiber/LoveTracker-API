@@ -4,6 +4,7 @@ const express = require("express");
 const authService = require("../services/authService");
 const { authenticateToken } = require("../middleware/authMiddleware");
 const Session = require("../models/sessionModel");
+const User = require("../models/userModel");
 
 const authRouter = express.Router();
 
@@ -72,18 +73,25 @@ authRouter.post("/save-location", authenticateToken, async (req, res) => {
   }
 });
 
-authRouter.get("/locations", authenticateToken, async (req, res) => {
+authRouter.get("/location/:userId", authenticateToken, async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const requesterId = req.user.userId;
+    const requestedUserId = req.params.userId;
 
     // Ellenőrizzük, van-e még érvényes session a felhasználónak
-    const existingSession = await Session.findOne({ userId });
+    const existingSession = await Session.findOne({ userId: requesterId });
     if (!existingSession) {
       return res.status(401).json({ error: "Unauthorized - Invalid session" });
     }
 
-    const locations = await authService.getAllLocations(userId);
-    res.json(locations);
+    // Ellenőrizzük, hogy a kért felhasználó létezik
+    const requestedUser = await User.findById(requestedUserId);
+    if (!requestedUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const location = await authService.getLocation(requestedUserId);
+    res.json(location);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });

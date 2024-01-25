@@ -28,11 +28,18 @@ async function login(username, password) {
     throw new Error("Invalid username or password");
   }
 
+  const existingSession = await Session.findOne({ userId: user._id });
+  if (existingSession) {
+    // Ha van, akkor már be van jelentkezve, visszatérünk egy speciális objektummal
+    return { isLoggedIn: true, user };
+  }
+
   const token = jwt.sign({ userId: user._id }, secretKey);
   const newSession = new Session({ userId: user._id, token });
   await newSession.save();
 
-  return { user, token };
+  // Ha nincs, létrehozzuk az új session-t és visszatérünk az új session-ös felhasználóval
+  return { isLoggedIn: false, user, token };
 }
 
 async function getOtherUserIds(userId) {
@@ -81,11 +88,20 @@ async function getAllLocations(userId) {
   return locations;
 }
 
+async function getLocation(userId) {
+  //const location = await Location.findOne({ userId });
+  const location = await Location.find({ userId }).select(
+    "latitude longitude timestamp"
+  );
+  return location;
+}
+
 module.exports = {
   register,
   login,
   getOtherUserIds,
   logout,
   saveLocation,
+  getLocation,
   getAllLocations,
 };
