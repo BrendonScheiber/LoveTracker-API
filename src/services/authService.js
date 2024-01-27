@@ -4,11 +4,10 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const User = require("../models/userModel");
 const Session = require("../models/sessionModel");
-const Location = require("../models/locationModel");
 
 const saltRounds = 10;
 const secretKey =
-  "gDtxg@9vtFp2FH.PUhbr9g!qhC6VtKxVs-Ukbe!_scu@wAMZmo!!REoWYoico@MWDuK!UPRjn8X9f9c!b9J9VJGW3p*oiNj4mfnx"; // replace with a secure secret key
+  "gDtxg@9vtFp2FH.PUhbr9g!qhC6VtKxVs-Ukbe!_scu@wAMZmo!!REoWYoico@MWDuK!UPRjn8X9f9c!b9J9VJGW3p*oiNj4mfnx";
 
 async function register(username, password) {
   const hashedPassword = await bcrypt.hash(password, saltRounds);
@@ -42,58 +41,15 @@ async function login(username, password) {
   return { isLoggedIn: false, user, token };
 }
 
+async function logout(userId) {
+  const result = await Session.deleteMany({ userId });
+}
+
+//Lekéri a másik felhasználók id-jét
 async function getOtherUserIds(userId) {
   const otherUsers = await User.find({ _id: { $ne: userId } });
   const otherUserIds = otherUsers.map((user) => user._id);
   return otherUserIds;
-}
-
-async function logout(userId) {
-  //console.log("Logout function called for userId:", userId);
-  const result = await Session.deleteMany({ userId });
-  // console.log("Deleted sessions:", result.deletedCount);
-}
-
-async function saveLocation(userId, latitude, longitude) {
-  // Ellenőrizzük, van-e még érvényes session a felhasználónak
-  const existingSession = await Session.findOne({ userId });
-
-  if (!existingSession) {
-    // Ha nincs érvényes session, visszatérünk egy válaszobjektummal
-    return { error: "No valid session for the user" };
-  }
-
-  // Ellenőrizzük, van-e már helyszínadat a felhasználónak
-  const existingLocation = await Location.findOne({ userId });
-
-  if (existingLocation) {
-    // Ha van, akkor frissítjük a meglévő helyszínadatot
-    existingLocation.latitude = latitude;
-    existingLocation.longitude = longitude;
-    existingLocation.timestamp = Date.now();
-    await existingLocation.save();
-    return existingLocation;
-  } else {
-    // Ha nincs, akkor létrehozunk egy új helyszínadatot
-    const newLocation = new Location({ userId, latitude, longitude });
-    await newLocation.save();
-    return newLocation;
-  }
-}
-
-async function getAllLocations(userId) {
-  const locations = await Location.find({ userId }).select(
-    "latitude longitude timestamp"
-  );
-  return locations;
-}
-
-async function getLocation(userId) {
-  //const location = await Location.findOne({ userId });
-  const location = await Location.find({ userId }).select(
-    "latitude longitude timestamp"
-  );
-  return location;
 }
 
 module.exports = {
@@ -101,7 +57,4 @@ module.exports = {
   login,
   getOtherUserIds,
   logout,
-  saveLocation,
-  getLocation,
-  getAllLocations,
 };

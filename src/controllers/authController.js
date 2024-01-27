@@ -1,10 +1,9 @@
 // src/controllers/authController.js
 
 const express = require("express");
+const Session = require("../models/sessionModel");
 const authService = require("../services/authService");
 const { authenticateToken } = require("../middleware/authMiddleware");
-const Session = require("../models/sessionModel");
-const User = require("../models/userModel");
 
 const authRouter = express.Router();
 
@@ -28,6 +27,18 @@ authRouter.post("/login", async (req, res) => {
   }
 });
 
+authRouter.post("/logout", authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    await authService.logout(userId);
+    res.json({ message: "Logout successful." });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+//Megadja a másik felhasználók id-jét
 authRouter.get("/located-userid", authenticateToken, async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -40,58 +51,6 @@ authRouter.get("/located-userid", authenticateToken, async (req, res) => {
 
     const otherUserIds = await authService.getOtherUserIds(userId);
     res.json(otherUserIds);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
-
-authRouter.post("/logout", authenticateToken, async (req, res) => {
-  try {
-    const userId = req.user.userId;
-    await authService.logout(userId);
-    res.json({ message: "Logout successful." });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
-
-authRouter.post("/save-location", authenticateToken, async (req, res) => {
-  try {
-    const { latitude, longitude } = req.body;
-    const userId = req.user.userId;
-    const newLocation = await authService.saveLocation(
-      userId,
-      latitude,
-      longitude
-    );
-    res.json(newLocation);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
-
-authRouter.get("/location/:userId", authenticateToken, async (req, res) => {
-  try {
-    const requesterId = req.user.userId;
-    const requestedUserId = req.params.userId;
-
-    // Ellenőrizzük, van-e még érvényes session a felhasználónak
-    const existingSession = await Session.findOne({ userId: requesterId });
-    if (!existingSession) {
-      return res.status(401).json({ error: "Unauthorized - Invalid session" });
-    }
-
-    // Ellenőrizzük, hogy a kért felhasználó létezik
-    const requestedUser = await User.findById(requestedUserId);
-    if (!requestedUser) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    const location = await authService.getLocation(requestedUserId);
-    res.json(location);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });

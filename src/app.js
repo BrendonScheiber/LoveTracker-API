@@ -3,9 +3,10 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
-const authController = require("./controllers/authController");
-const { authenticateToken } = require("./middleware/authMiddleware");
 const Session = require("./models/sessionModel");
+const authController = require("./controllers/authController");
+const locationController = require("./controllers/locationController");
+const { authenticateToken } = require("./middleware/authMiddleware");
 
 const app = express();
 const PORT = 3000;
@@ -18,6 +19,8 @@ app.use(bodyParser.json());
 
 // Authentikációs útvonalak
 app.use("/auth", authController);
+
+app.use("/location", authenticateToken, locationController);
 
 // Védett útvonal hozzáadása
 app.get("/locate", authenticateToken, (req, res) => {
@@ -38,14 +41,8 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: "Internal Server Error" });
 });
 
-// Szerver indítása
-//app.listen(PORT, () => {
-//console.log(`Server is running on http://localhost:${PORT}`);
-//});
-
 // Az alkalmazás indításakor töröljük a session-ket
 mongoose.connection.once("open", async () => {
-  //console.log("Connected to MongoDB");
   await Session.deleteMany({});
   console.log("All sessions deleted");
   app.listen(PORT, () => {
