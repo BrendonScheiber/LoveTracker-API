@@ -7,7 +7,7 @@ const Session = require("../models/sessionModel");
 
 const saltRounds = 10;
 const secretKey =
-  "gDtxg@9vtFp2FH.PUhbr9g!qhC6VtKxVs-Ukbe!_scu@wAMZmo!!REoWYoico@MWDuK!UPRjn8X9f9c!b9J9VJGW3p*oiNj4mfnx";
+  "";
 
 async function register(username, password) {
   const hashedPassword = await bcrypt.hash(password, saltRounds);
